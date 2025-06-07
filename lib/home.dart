@@ -5,6 +5,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import "package:permission_handler/permission_handler.dart";
 
 class HomePageWidget extends StatefulWidget {
   const HomePageWidget({super.key});
@@ -21,14 +22,22 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   late stt.SpeechToText _speech;
   bool _isListening = false;
   String _textoReconhecido = 'Olá!\nAperte para falar';
-  final String witToken = '5L3YLJ2FJEPTO5MZOWS7UPAQMBANZSD6'; // substitua pelo seu token
+  final String witToken = '5L3YLJ2FJEPTO5MZOWS7UPAQMBANZSD6'; // Substitua pelo seu token
 
   @override
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
-    _initSpeechRecognizer();
+    _pedirPermissoes().then((_) => _initSpeechRecognizer());
   }
+
+Future<void> _pedirPermissoes() async {
+  var statusMic = await Permission.microphone.status;
+
+  if (!statusMic.isGranted) {
+    await Permission.microphone.request();
+  }
+}
 
   Future<void> _initSpeechRecognizer() async {
     bool available = await _speech.initialize(
