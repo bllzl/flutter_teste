@@ -22,7 +22,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   late stt.SpeechToText _speech;
   bool _isListening = false;
   String _textoReconhecido = 'Olá!\nAperte para falar';
-  final String witToken = '5L3YLJ2FJEPTO5MZOWS7UPAQMBANZSD6'; // Substitua pelo seu token
+  final String witToken = '5L3YLJ2FJEPTO5MZOWS7UPAQMBANZSD6'; // Token de acesso do Wit.ai
 
   @override
   void initState() {
@@ -31,13 +31,13 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     _pedirPermissoes().then((_) => _initSpeechRecognizer());
   }
 
-Future<void> _pedirPermissoes() async {
-  var statusMic = await Permission.microphone.status;
+  Future<void> _pedirPermissoes() async {
+    var statusMic = await Permission.microphone.status;
 
-  if (!statusMic.isGranted) {
-    await Permission.microphone.request();
+    if (!statusMic.isGranted) {
+      await Permission.microphone.request();
+    }
   }
-}
 
   Future<void> _initSpeechRecognizer() async {
     bool available = await _speech.initialize(
@@ -62,34 +62,39 @@ Future<void> _pedirPermissoes() async {
   }
 
   Future<void> _interpretarComando(String comando) async {
-    final response = await http.post(
+    final response = await http.get(
       Uri.parse(
         'https://api.wit.ai/message?v=20240606&q=${Uri.encodeComponent(comando)}',
       ),
       headers: {
         'Authorization': 'Bearer $witToken',
-        'Content-Type': 'application/json',
       },
     );
 
-    final data = jsonDecode(response.body);
-    final intent =
-        data['intents'].isNotEmpty ? data['intents'][0]['name'] : null;
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final intents = data['intents'] as List?;
+      final intent = (intents != null && intents.isNotEmpty)
+          ? intents[0]['name']
+          : null;
 
-    if (intent != null) {
-      switch (intent) {
-        case 'abrir_tutorial':
-          Navigator.pushNamed(context, 'TutorialWidget');
-          break;
-        case 'falar_hora':
-          final hora = DateFormat('HH:mm').format(DateTime.now());
-          await flutterTts.speak("Agora são $hora");
-          break;
-        default:
-          await flutterTts.speak("Comando não reconhecido.");
+      if (intent != null) {
+        switch (intent) {
+          case 'abrir_tutorial':
+            Navigator.pushNamed(context, 'TutorialWidget');
+            break;
+          case 'falar_hora':
+            final hora = DateFormat('HH:mm').format(DateTime.now());
+            await flutterTts.speak("Agora são $hora");
+            break;
+          default:
+            await flutterTts.speak("Comando não reconhecido.");
+        }
+      } else {
+        await flutterTts.speak("Desculpe, não entendi.");
       }
     } else {
-      await flutterTts.speak("Desculpe, não entendi.");
+      await flutterTts.speak("Erro ao se comunicar com o servidor.");
     }
   }
 
