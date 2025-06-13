@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 // ignore: unused_import
-import 'package:flutter_teste/flutter_flow/flutter_flow_model.dart';
+import 'package:meu_apoio/flutter_flow/flutter_flow_model.dart';
 
 class HomePageModel extends FlutterFlowModel {
   void initState(BuildContext context) {}
