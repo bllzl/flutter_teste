@@ -24,7 +24,6 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   bool _isListening = false;
   String _textoReconhecido = 'Olá!\nAperte para falar';
 
-  // ✅ Token do Wit.ai
   final String witToken = '5L3YLJ2FJEPT05MZ0W57UPAQMBANZSD6';
 
   @override
@@ -51,7 +50,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       onError: (error) {
         setState(() {
           _isListening = false;
-          _textoReconhecido = 'Erro: ${error.errorMsg}';
+          _textoReconhecido = 'Erro: \${error.errorMsg}';
         });
       },
     );
@@ -65,9 +64,9 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   Future<void> _interpretarComando(String comando) async {
     final response = await http.get(
-      Uri.parse('https://api.wit.ai/message?v=20240606&q=${Uri.encodeComponent(comando)}'),
+      Uri.parse('https://api.wit.ai/message?v=20240606&q=\${Uri.encodeComponent(comando)}'),
       headers: {
-        'Authorization': 'Bearer $witToken',
+        'Authorization': 'Bearer \$witToken',
       },
     );
 
@@ -91,36 +90,53 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       case 'abrir_tutorial':
         Navigator.pushNamed(context, 'TutorialWidget');
         break;
-
       case 'falar_hora':
         final hora = DateFormat('HH:mm').format(DateTime.now());
-        await flutterTts.speak("Agora são $hora");
+        await flutterTts.speak("Agora são \$hora");
         break;
-
       case 'abrir_whatsapp':
-        final nomeContato = _extrairNomeContato(comandoOriginal);
-        if (nomeContato != null) {
-          await flutterTts.speak("Abrindo WhatsApp para $nomeContato");
-          final uri = Uri.parse("https://wa.me/"); // Personalizar com lógica se quiser abrir contato específico
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri);
-          } else {
-            await flutterTts.speak("Não foi possível abrir o WhatsApp.");
-          }
+        await _abrirApp('com.whatsapp', 'Abrindo o WhatsApp');
+        break;
+      case 'abrir_youtube':
+        await _abrirApp('com.google.android.youtube', 'Abrindo o YouTube');
+        break;
+      case 'abrir_google_maps':
+        await _abrirApp('com.google.android.apps.maps', 'Abrindo o Google Maps');
+        break;
+      case 'abrir_camera':
+        await _abrirApp('com.android.camera', 'Abrindo a câmera');
+        break;
+      case 'ligar_telefone':
+        final uri = Uri.parse("tel:11999999999");
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri);
+          await flutterTts.speak("Ligando para o número");
         } else {
-          await flutterTts.speak("Por favor, diga o nome do contato.");
+          await flutterTts.speak("Não consegui fazer a ligação.");
         }
         break;
-
+      case 'abrir_navegador':
+        final uri = Uri.parse("https://www.google.com");
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+          await flutterTts.speak("Abrindo o navegador");
+        } else {
+          await flutterTts.speak("Não consegui abrir o navegador.");
+        }
+        break;
       default:
         await flutterTts.speak("Comando não reconhecido.");
     }
   }
 
-  String? _extrairNomeContato(String comando) {
-    final regex = RegExp(r"(?:(?:para|com)\s)(\w+)", caseSensitive: false);
-    final match = regex.firstMatch(comando);
-    return match?.group(1);
+  Future<void> _abrirApp(String packageName, String mensagem) async {
+    final uri = Uri.parse("intent://\$packageName#Intent;scheme=package;package=\$packageName;end");
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+      await flutterTts.speak(mensagem);
+    } else {
+      await flutterTts.speak("Não consegui abrir o aplicativo.");
+    }
   }
 
   Future<void> _speakAndListen() async {
