@@ -24,7 +24,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   bool _isListening = false;
   String _textoReconhecido = 'Olá!\nAperte para falar';
 
-  final String witToken = '5L3YLJ2FJEPT05MZ0W57UPAQMBANZSD6';
+  final String witToken = 'NR67RNC45HWINHQ4T7MBBNRF2HLRI2FA';
 
   @override
   void initState() {
@@ -64,9 +64,9 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   Future<void> _interpretarComando(String comando) async {
     final response = await http.get(
-      Uri.parse('https://api.wit.ai/message?v=20240606&q=\${Uri.encodeComponent(comando)}'),
+      Uri.parse('https://api.wit.ai/message?v=20240606&q=${Uri.encodeComponent(comando)}'),
       headers: {
-        'Authorization': 'Bearer \$witToken',
+        'Authorization': 'Bearer $witToken',
       },
     );
 
