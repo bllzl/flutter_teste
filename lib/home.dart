@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:device_apps/device_apps.dart';
 
 class HomePageWidget extends StatefulWidget {
   const HomePageWidget({super.key});
@@ -50,7 +51,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       onError: (error) {
         setState(() {
           _isListening = false;
-          _textoReconhecido = 'Erro: \${error.errorMsg}';
+          _textoReconhecido = 'Erro: ${error.errorMsg}';
         });
       },
     );
@@ -64,7 +65,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   Future<void> _interpretarComando(String comando) async {
     final response = await http.get(
-      Uri.parse('https://api.wit.ai/message?v=20240606&q=${Uri.encodeComponent(comando)}'),
+      Uri.parse('https://api.wit.ai/message?v=20250606&q=${Uri.encodeComponent(comando)}'),
       headers: {
         'Authorization': 'Bearer $witToken',
       },
@@ -78,7 +79,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       if (intent != null) {
         await _executarAcao(intent, comando);
       } else {
-        await flutterTts.speak("Desculpe, não entendi o que foi dito.");
+        await abrirAppPorNomeFalado(comando);
       }
     } else {
       await flutterTts.speak("Erro ao conectar com o servidor.");
@@ -92,7 +93,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         break;
       case 'falar_hora':
         final hora = DateFormat('HH:mm').format(DateTime.now());
-        await flutterTts.speak("Agora são \$hora");
+        await flutterTts.speak("Agora são $hora");
         break;
       case 'abrir_whatsapp':
         await _abrirApp('com.whatsapp', 'Abrindo o WhatsApp');
@@ -125,14 +126,39 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         }
         break;
       default:
-        await flutterTts.speak("Comando não reconhecido.");
+        await abrirAppPorNomeFalado(comandoOriginal);
+        break;
+    }
+  }
+
+  Future<void> abrirAppPorNomeFalado(String nomeFalado) async {
+    List<Application> apps = await DeviceApps.getInstalledApplications(
+      includeAppIcons: false,
+      includeSystemApps: false,
+    );
+
+    final nomeLimpo = nomeFalado.toLowerCase().replaceAll("abrir", "").trim();
+
+    Application? appEncontrado;
+    for (var app in apps) {
+      if (app.appName.toLowerCase().contains(nomeLimpo)) {
+        appEncontrado = app;
+        break;
+      }
+    }
+
+    if (appEncontrado != null) {
+      await flutterTts.speak("Abrindo ${appEncontrado.appName}");
+      await DeviceApps.openApp(appEncontrado.packageName);
+    } else {
+      await flutterTts.speak("Não encontrei o aplicativo chamado $nomeLimpo");
     }
   }
 
   Future<void> _abrirApp(String packageName, String mensagem) async {
-    final uri = Uri.parse("intent://\$packageName#Intent;scheme=package;package=\$packageName;end");
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
+    final isInstalled = await DeviceApps.isAppInstalled(packageName);
+    if (isInstalled) {
+      await DeviceApps.openApp(packageName);
       await flutterTts.speak(mensagem);
     } else {
       await flutterTts.speak("Não consegui abrir o aplicativo.");
