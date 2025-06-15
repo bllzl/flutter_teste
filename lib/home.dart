@@ -6,8 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:device_apps/device_apps.dart';
+import 'package:android_intent_plus/android_intent.dart';
 
 class HomePageWidget extends StatefulWidget {
   const HomePageWidget({super.key});
@@ -51,7 +50,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       onError: (error) {
         setState(() {
           _isListening = false;
-          _textoReconhecido = 'Erro: ${error.errorMsg}';
+          _textoReconhecido = 'Erro: \${error.errorMsg}';
         });
       },
     );
@@ -65,7 +64,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   Future<void> _interpretarComando(String comando) async {
     final response = await http.get(
-      Uri.parse('https://api.wit.ai/message?v=20250606&q=${Uri.encodeComponent(comando)}'),
+      Uri.parse('https://api.wit.ai/message?v=20250606&q=\${Uri.encodeComponent(comando)}'),
       headers: {
         'Authorization': 'Bearer $witToken',
       },
@@ -77,7 +76,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       final intent = (intents != null && intents.isNotEmpty) ? intents[0]['name'] : null;
 
       if (intent != null) {
-        await _executarAcao(intent, comando);
+        await _executarAcao(intent);
       } else {
         await abrirAppPorNomeFalado(comando);
       }
@@ -86,7 +85,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     }
   }
 
-  Future<void> _executarAcao(String intent, String comandoOriginal) async {
+  Future<void> _executarAcao(String intent) async {
     switch (intent) {
       case 'abrir_tutorial':
         Navigator.pushNamed(context, 'TutorialWidget');
@@ -96,73 +95,38 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         await flutterTts.speak("Agora são $hora");
         break;
       case 'abrir_whatsapp':
-        await _abrirApp('com.whatsapp', 'Abrindo o WhatsApp');
+        await _abrirApp('com.whatsapp');
         break;
       case 'abrir_youtube':
-        await _abrirApp('com.google.android.youtube', 'Abrindo o YouTube');
+        await _abrirApp('com.google.android.youtube');
         break;
       case 'abrir_google_maps':
-        await _abrirApp('com.google.android.apps.maps', 'Abrindo o Google Maps');
-        break;
-      case 'abrir_camera':
-        await _abrirApp('com.android.camera', 'Abrindo a câmera');
-        break;
-      case 'ligar_telefone':
-        final uri = Uri.parse("tel:11999999999");
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri);
-          await flutterTts.speak("Ligando para o número");
-        } else {
-          await flutterTts.speak("Não consegui fazer a ligação.");
-        }
-        break;
-      case 'abrir_navegador':
-        final uri = Uri.parse("https://www.google.com");
-        if (await canLaunchUrl(uri)) {
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
-          await flutterTts.speak("Abrindo o navegador");
-        } else {
-          await flutterTts.speak("Não consegui abrir o navegador.");
-        }
+        await _abrirApp('com.google.android.apps.maps');
         break;
       default:
-        await abrirAppPorNomeFalado(comandoOriginal);
+        await flutterTts.speak("Comando não reconhecido");
         break;
     }
   }
 
   Future<void> abrirAppPorNomeFalado(String nomeFalado) async {
-    List<Application> apps = await DeviceApps.getInstalledApplications(
-      includeAppIcons: false,
-      includeSystemApps: false,
-    );
-
-    final nomeLimpo = nomeFalado.toLowerCase().replaceAll("abrir", "").trim();
-
-    Application? appEncontrado;
-    for (var app in apps) {
-      if (app.appName.toLowerCase().contains(nomeLimpo)) {
-        appEncontrado = app;
-        break;
-      }
-    }
-
-    if (appEncontrado != null) {
-      await flutterTts.speak("Abrindo ${appEncontrado.appName}");
-      await DeviceApps.openApp(appEncontrado.packageName);
-    } else {
-      await flutterTts.speak("Não encontrei o aplicativo chamado $nomeLimpo");
-    }
+    String nome = nomeFalado.toLowerCase().replaceAll("abrir", "").trim();
+    await flutterTts.speak("Tentando abrir o aplicativo $nome");
+    await _abrirAppPorNome(nome);
   }
 
-  Future<void> _abrirApp(String packageName, String mensagem) async {
-    final isInstalled = await DeviceApps.isAppInstalled(packageName);
-    if (isInstalled) {
-      await DeviceApps.openApp(packageName);
-      await flutterTts.speak(mensagem);
-    } else {
-      await flutterTts.speak("Não consegui abrir o aplicativo.");
-    }
+  Future<void> _abrirApp(String pacote) async {
+    final intent = AndroidIntent(
+      action: 'action_view',
+      package: pacote,
+    );
+    await intent.launch();
+  }
+
+  Future<void> _abrirAppPorNome(String nome) async {
+    // Para abrir apps genéricos por nome, você precisará mapear nomes para pacotes
+    // Ou usar alguma API nativa que liste pacotes instalados (requer código nativo personalizado)
+    await flutterTts.speak("Não consegui abrir o app $nome. Verifique se está instalado.");
   }
 
   Future<void> _speakAndListen() async {
