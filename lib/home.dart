@@ -136,7 +136,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         setState(() => _isListening = true);
         await _speech.listen(
           localeId: "pt_BR",
-          listenFor: const Duration(seconds: 6),
+          listenFor: const Duration(seconds: 10),
           onResult: (result) async {
             setState(() {
               _textoReconhecido = result.recognizedWords;
