@@ -7,15 +7,15 @@ plugins {
 
 android {
     namespace = "com.seunome.meuapoio" // <- deve ser igual ao applicationId (seguindo convenção)
-    compileSdk = flutter.compileSdkVersion
+    compileSdkVersion 34
     ndkVersion = flutter.ndkVersion
 
     defaultConfig {
-        applicationId "com.seunome.meuapoio" // <- ID único do app
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        applicationId "com.seunome.meuapoio"
+        minSdkVersion 28              // Android 9 (Pie)
+        targetSdkVersion 34           // Android 14 (seguro)
+        versionCode 1
+        versionName "1.0.0"
     }
 
     compileOptions {
