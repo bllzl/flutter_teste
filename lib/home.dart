@@ -5,13 +5,15 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
-import "package:permission_handler/permission_handler.dart";
+import 'package:permission_handler/permission_handler.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+// sei la
 
 class HomePageWidget extends StatefulWidget {
   const HomePageWidget({super.key});
 
   static String routeName = 'HomePage';
-  static String routePath = '/homePage';
 
   @override
   State<HomePageWidget> createState() => _HomePageWidgetState();
@@ -21,22 +23,21 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   final FlutterTts flutterTts = FlutterTts();
   late stt.SpeechToText _speech;
   bool _isListening = false;
-  String _textoReconhecido = 'Olá!\nAperte para falar';
-  final String witToken = '5L3YLJ2FJEPTO5MZOWS7UPAQMBANZSD6'; // Token de acesso do Wit.ai
+  String _textoReconhecido = 'Olá!\nAperte Para falar';
+
+  final String witToken = 'NR67RNC45HWINHQ4T7MBBNRF2HLRI2FA';
 
   @override
   void initState() {
     super.initState();
     _speech = stt.SpeechToText();
     _pedirPermissoes().then((_) => _initSpeechRecognizer());
+    flutterTts.setLanguage("pt-BR");
+    flutterTts.setSpeechRate(0.9);
   }
 
   Future<void> _pedirPermissoes() async {
-    var statusMic = await Permission.microphone.status;
-
-    if (!statusMic.isGranted) {
-      await Permission.microphone.request();
-    }
+    await Permission.microphone.request();
   }
 
   Future<void> _initSpeechRecognizer() async {
@@ -49,7 +50,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       onError: (error) {
         setState(() {
           _isListening = false;
-          _textoReconhecido = 'Erro ao ouvir: ${error.errorMsg}';
+          _textoReconhecido = 'Erro: ${error.errorMsg}';
         });
       },
     );
@@ -63,9 +64,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   Future<void> _interpretarComando(String comando) async {
     final response = await http.get(
-      Uri.parse(
-        'https://api.wit.ai/message?v=20240606&q=${Uri.encodeComponent(comando)}',
-      ),
+      Uri.parse('https://api.wit.ai/message?v=20250606&q=${Uri.encodeComponent(comando)}'),
       headers: {
         'Authorization': 'Bearer $witToken',
       },
@@ -74,27 +73,50 @@ class _HomePageWidgetState extends State<HomePageWidget> {
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
       final intents = data['intents'] as List?;
-      final intent = (intents != null && intents.isNotEmpty)
-          ? intents[0]['name']
-          : null;
+      final intent = (intents != null && intents.isNotEmpty) ? intents[0]['name'] : null;
 
       if (intent != null) {
-        switch (intent) {
-          case 'abrir_tutorial':
-            Navigator.pushNamed(context, 'TutorialWidget');
-            break;
-          case 'falar_hora':
-            final hora = DateFormat('HH:mm').format(DateTime.now());
-            await flutterTts.speak("Agora são $hora");
-            break;
-          default:
-            await flutterTts.speak("Comando não reconhecido.");
-        }
+        await _executarAcao(intent);
       } else {
-        await flutterTts.speak("Desculpe, não entendi.");
+        await abrirAppPorNomeFalado(comando);
       }
     } else {
-      await flutterTts.speak("Erro ao se comunicar com o servidor.");
+      await flutterTts.speak("Erro ao conectar com o servidor.");
+    }
+  }
+
+  Future<void> _executarAcao(String intent) async {
+    switch (intent) {
+      case 'falar_hora':
+        final hora = DateFormat('HH:mm').format(DateTime.now());
+        await flutterTts.speak("Agora são $hora");
+        break;
+      case 'abrir_whatsapp':
+        await _abrirUrl("https://wa.me/");
+        break;
+      case 'abrir_youtube':
+        await _abrirUrl("https://youtube.com");
+        break;
+      case 'abrir_google_maps':
+        await _abrirUrl("https://www.google.com/maps");
+        break;
+      default:
+        await flutterTts.speak("Comando não reconhecido");
+        break;
+    }
+  }
+
+  Future<void> abrirAppPorNomeFalado(String nomeFalado) async {
+    String nome = nomeFalado.toLowerCase().replaceAll("abrir", "").trim();
+    await flutterTts.speak("Não consegui abrir o aplicativo $nome");
+  }
+
+  Future<void> _abrirUrl(String url) async {
+    Uri uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      await flutterTts.speak("Não consegui abrir o link.");
     }
   }
 
@@ -105,7 +127,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         setState(() => _isListening = true);
         await _speech.listen(
           localeId: "pt_BR",
-          listenFor: const Duration(seconds: 5),
+          listenFor: const Duration(seconds: 10),
           onResult: (result) async {
             setState(() {
               _textoReconhecido = result.recognizedWords;
@@ -115,6 +137,8 @@ class _HomePageWidgetState extends State<HomePageWidget> {
             }
           },
         );
+      } else {
+        await flutterTts.speak("Não consegui ativar o microfone.");
       }
     } else {
       await _speech.stop();
@@ -138,23 +162,6 @@ class _HomePageWidgetState extends State<HomePageWidget> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ElevatedButton.icon(
-                onPressed: () =>
-                    Navigator.pushNamed(context, 'TutorialWidget'),
-                icon: const Icon(Icons.info_outline, size: 28),
-                label: const Text(
-                  'Como Usar',
-                  style: TextStyle(fontSize: 20),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7D85FF),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  padding:
-                      const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-                ),
-              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
@@ -162,7 +169,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                   textAlign: TextAlign.center,
                   style: GoogleFonts.inter(
                     color: Colors.white,
-                    fontSize: 32,
+                    fontSize: 30,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
