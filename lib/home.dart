@@ -6,13 +6,12 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:android_intent_plus/android_intent.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HomePageWidget extends StatefulWidget {
   const HomePageWidget({super.key});
 
-  static String routeName = 'HomePage';
-  static String routePath = '/homePage';
+  static String routeName = '/home';
 
   @override
   State<HomePageWidget> createState() => _HomePageWidgetState();
@@ -41,25 +40,31 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   }
 
   Future<void> _initSpeechRecognizer() async {
-    bool available = await _speech.initialize(
-      onStatus: (status) {
-        if (status == 'notListening') {
-          setState(() => _isListening = false);
-        }
-      },
-      onError: (error) {
-        setState(() {
-          _isListening = false;
-          _textoReconhecido = 'Erro: ${error.errorMsg}';
-        });
-      },
-    );
+    try {
+      bool available = await _speech.initialize(
+        onStatus: (status) {
+          if (status == 'notListening') {
+            setState(() => _isListening = false);
+          }
+        },
+        onError: (error) {
+          setState(() {
+            _isListening = false;
+            _textoReconhecido = 'Erro: ${error.errorMsg}';
+          });
+        },
+      );
 
-    setState(() {
-      _textoReconhecido = available
-          ? 'Olá!\nAperte para falar'
-          : 'Reconhecimento de voz indisponível';
-    });
+      setState(() {
+        _textoReconhecido = available
+            ? 'Olá!\nAperte para falar'
+            : 'Reconhecimento de voz indisponível';
+      });
+    } catch (e) {
+      setState(() {
+        _textoReconhecido = 'Erro ao inicializar o microfone';
+      });
+    }
   }
 
   Future<void> _interpretarComando(String comando) async {
@@ -95,13 +100,13 @@ class _HomePageWidgetState extends State<HomePageWidget> {
         await flutterTts.speak("Agora são $hora");
         break;
       case 'abrir_whatsapp':
-        await _abrirApp('com.whatsapp');
+        await _abrirUrl('https://wa.me/');
         break;
       case 'abrir_youtube':
-        await _abrirApp('com.google.android.youtube');
+        await _abrirUrl('https://www.youtube.com');
         break;
       case 'abrir_google_maps':
-        await _abrirApp('com.google.android.apps.maps');
+        await _abrirUrl('https://maps.google.com');
         break;
       default:
         await flutterTts.speak("Comando não reconhecido");
@@ -112,24 +117,16 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   Future<void> abrirAppPorNomeFalado(String nomeFalado) async {
     String nome = nomeFalado.toLowerCase().replaceAll("abrir", "").trim();
     await flutterTts.speak("Tentando abrir o aplicativo $nome");
-    await _abrirAppPorNome(nome);
+    await flutterTts.speak("Por favor, tente comandos como abrir YouTube, WhatsApp ou Google Maps.");
   }
 
-  Future<void> _abrirApp(String pacote) async {
-    try {
-      final intent = AndroidIntent(
-        action: 'android.intent.action.MAIN',
-        package: pacote,
-        category: 'android.intent.category.LAUNCHER',
-      );
-      await intent.launch();
-    } catch (e) {
-      await flutterTts.speak("Não consegui abrir o app. Verifique se está instalado.");
+  Future<void> _abrirUrl(String url) async {
+    final uri = Uri.parse(url);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else {
+      await flutterTts.speak("Não consegui abrir o link.");
     }
-  }
-
-  Future<void> _abrirAppPorNome(String nome) async {
-    await flutterTts.speak("Não consegui abrir o app $nome. Verifique se está instalado.");
   }
 
   Future<void> _speakAndListen() async {
