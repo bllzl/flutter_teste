@@ -11,7 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 class HomePageWidget extends StatefulWidget {
   const HomePageWidget({super.key});
 
-  static String routeName = '/home';
+  static String routeName = 'HomePage';
 
   @override
   State<HomePageWidget> createState() => _HomePageWidgetState();
@@ -36,35 +36,28 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   Future<void> _pedirPermissoes() async {
     await Permission.microphone.request();
-    await Permission.speech.request();
   }
 
   Future<void> _initSpeechRecognizer() async {
-    try {
-      bool available = await _speech.initialize(
-        onStatus: (status) {
-          if (status == 'notListening') {
-            setState(() => _isListening = false);
-          }
-        },
-        onError: (error) {
-          setState(() {
-            _isListening = false;
-            _textoReconhecido = 'Erro: ${error.errorMsg}';
-          });
-        },
-      );
+    bool available = await _speech.initialize(
+      onStatus: (status) {
+        if (status == 'notListening') {
+          setState(() => _isListening = false);
+        }
+      },
+      onError: (error) {
+        setState(() {
+          _isListening = false;
+          _textoReconhecido = 'Erro: ${error.errorMsg}';
+        });
+      },
+    );
 
-      setState(() {
-        _textoReconhecido = available
-            ? 'Olá!\nAperte para falar'
-            : 'Reconhecimento de voz indisponível';
-      });
-    } catch (e) {
-      setState(() {
-        _textoReconhecido = 'Erro ao inicializar o microfone';
-      });
-    }
+    setState(() {
+      _textoReconhecido = available
+          ? 'Olá!\nAperte para falar'
+          : 'Reconhecimento de voz indisponível';
+    });
   }
 
   Future<void> _interpretarComando(String comando) async {
@@ -92,21 +85,18 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   Future<void> _executarAcao(String intent) async {
     switch (intent) {
-      case 'abrir_tutorial':
-        Navigator.pushNamed(context, 'TutorialWidget');
-        break;
       case 'falar_hora':
         final hora = DateFormat('HH:mm').format(DateTime.now());
         await flutterTts.speak("Agora são $hora");
         break;
       case 'abrir_whatsapp':
-        await _abrirUrl('https://wa.me/');
+        await _abrirUrl("https://wa.me/");
         break;
       case 'abrir_youtube':
-        await _abrirUrl('https://www.youtube.com');
+        await _abrirUrl("https://youtube.com");
         break;
       case 'abrir_google_maps':
-        await _abrirUrl('https://maps.google.com');
+        await _abrirUrl("https://www.google.com/maps");
         break;
       default:
         await flutterTts.speak("Comando não reconhecido");
@@ -116,12 +106,11 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   Future<void> abrirAppPorNomeFalado(String nomeFalado) async {
     String nome = nomeFalado.toLowerCase().replaceAll("abrir", "").trim();
-    await flutterTts.speak("Tentando abrir o aplicativo $nome");
-    await flutterTts.speak("Por favor, tente comandos como abrir YouTube, WhatsApp ou Google Maps.");
+    await flutterTts.speak("Não consegui abrir o aplicativo $nome");
   }
 
   Future<void> _abrirUrl(String url) async {
-    final uri = Uri.parse(url);
+    Uri uri = Uri.parse(url);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
@@ -171,18 +160,6 @@ class _HomePageWidgetState extends State<HomePageWidget> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              ElevatedButton.icon(
-                onPressed: () => Navigator.pushNamed(context, 'TutorialWidget'),
-                icon: const Icon(Icons.info_outline, size: 28),
-                label: const Text('Como Usar', style: TextStyle(fontSize: 20)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF7D85FF),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(28),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-                ),
-              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Text(
