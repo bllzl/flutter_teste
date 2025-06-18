@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'home.dart';
-import 'package:meu_apoio/main.dart';
 
 
 
@@ -20,9 +19,9 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      initialRoute: HomePageWidget.routeName,
+      initialRoute: '/Home',
       routes: {
-        HomePageWidget.routeName: (context) => const HomePageWidget(),
+        '/Home': (context) => const HomePageWidget(),
         'TutorialWidget': (context) => const PlaceholderWidget('Tutorial'),
         'ListaDeContatosWidget': (context) =>
             const PlaceholderWidget('Lista de Contatos'),
