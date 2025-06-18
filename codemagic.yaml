@@ -1,0 +1,21 @@
+workflows:
+  build-meu-apoio:
+    name: Build Meu Apoio
+    max_build_duration: 30
+    environment:
+      flutter: stable
+      xcode: latest
+      java: 17
+      vars:
+        JAVA_TOOL_OPTIONS: "-Xmx4096m"
+      android_signing:
+        - keystore_reference  # Use se for assinar
+    scripts:
+      - name: Clean flutter
+        script: flutter clean
+      - name: Get dependencies
+        script: flutter pub get
+      - name: Build AAB
+        script: flutter build appbundle --release
+    artifacts:
+      - build/app/outputs/bundle/release/app-release.aab
