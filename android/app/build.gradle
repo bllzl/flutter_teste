@@ -6,12 +6,12 @@ plugins {
 }
 
 android {
-    namespace = "com.seunome.meuapoio" // <- deve ser igual ao applicationId (seguindo convenção)
+    namespace = "com.seunome.flutter_teste" // <- deve ser igual ao applicationId (seguindo convenção)
     compileSdkVersion 34
     ndkVersion = flutter.ndkVersion
 
     defaultConfig {
-        applicationId "com.seunome.meuapoio"
+        applicationId "com.example.flutter_teste"
         minSdkVersion 28              // Android 9 (Pie)
         targetSdkVersion 34           // Android 14 (seguro)
         versionCode 1

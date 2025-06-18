@@ -50,7 +50,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
       onError: (error) {
         setState(() {
           _isListening = false;
-          _textoReconhecido = 'Erro: \${error.errorMsg}';
+          _textoReconhecido = 'Erro: ${error.errorMsg}';
         });
       },
     );
@@ -64,7 +64,7 @@ class _HomePageWidgetState extends State<HomePageWidget> {
 
   Future<void> _interpretarComando(String comando) async {
     final response = await http.get(
-      Uri.parse('https://api.wit.ai/message?v=20250606&q=\${Uri.encodeComponent(comando)}'),
+      Uri.parse('https://api.wit.ai/message?v=20250606&q=${Uri.encodeComponent(comando)}'),
       headers: {
         'Authorization': 'Bearer $witToken',
       },
@@ -116,16 +116,19 @@ class _HomePageWidgetState extends State<HomePageWidget> {
   }
 
   Future<void> _abrirApp(String pacote) async {
-    final intent = AndroidIntent(
-      action: 'action_view',
-      package: pacote,
-    );
-    await intent.launch();
+    try {
+      final intent = AndroidIntent(
+        action: 'android.intent.action.MAIN',
+        package: pacote,
+        category: 'android.intent.category.LAUNCHER',
+      );
+      await intent.launch();
+    } catch (e) {
+      await flutterTts.speak("Não consegui abrir o app. Verifique se está instalado.");
+    }
   }
 
   Future<void> _abrirAppPorNome(String nome) async {
-    // Para abrir apps genéricos por nome, você precisará mapear nomes para pacotes
-    // Ou usar alguma API nativa que liste pacotes instalados (requer código nativo personalizado)
     await flutterTts.speak("Não consegui abrir o app $nome. Verifique se está instalado.");
   }
 
