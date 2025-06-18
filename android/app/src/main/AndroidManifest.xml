@@ -1,5 +1,4 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.seunome.meuapoio">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- PERMISSÕES -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />

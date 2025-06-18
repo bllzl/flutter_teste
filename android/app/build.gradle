@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.seunome.flutter_teste" // <- deve ser igual ao applicationId (seguindo convenção)
-    compileSdkVersion 34
+    compileSdkVersion 35
     ndkVersion = flutter.ndkVersion
 
     defaultConfig {
